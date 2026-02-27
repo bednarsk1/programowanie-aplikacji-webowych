@@ -6,6 +6,7 @@ function App() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   useEffect(() => {
     const storedProjects = ProjectService.getAll();
@@ -15,15 +16,26 @@ function App() {
   const handleAddProject = () => {
     if (!name.trim() || !description.trim()) return;
 
-    const newProject: Project = {
-      id: crypto.randomUUID(),
-      name,
-      description,
-    };
+    if (editingId) {
+      const updatedProject: Project = {
+        id: editingId,
+        name,
+        description,
+      };
 
-    ProjectService.create(newProject);
+      ProjectService.update(updatedProject);
+      setEditingId(null);
+    } else {
+      const newProject: Project = {
+        id: crypto.randomUUID(),
+        name,
+        description,
+      };
+
+      ProjectService.create(newProject);
+    }
+
     setProjects(ProjectService.getAll());
-
     setName("");
     setDescription("");
   };
@@ -31,6 +43,12 @@ function App() {
   const handleDeleteProject = (id: string) => {
     ProjectService.delete(id);
     setProjects(ProjectService.getAll());
+  };
+
+  const handleEditProject = (project: Project) => {
+    setName(project.name);
+    setDescription(project.description);
+    setEditingId(project.id);
   };
 
   return (
@@ -54,7 +72,7 @@ function App() {
       />
 
       <button onClick={handleAddProject}>
-        Dodaj
+        {editingId ? "Zapisz zmiany" : "Dodaj"}
       </button>
 
       {projects.length === 0 && <p>Brak projektów</p>}
@@ -65,6 +83,9 @@ function App() {
           <p>{project.description}</p>
           <button onClick={() => handleDeleteProject(project.id)}>
             Usuń
+          </button>
+          <button onClick={() => handleEditProject(project)}>
+            Edytuj
           </button>
         </div>
       ))}
