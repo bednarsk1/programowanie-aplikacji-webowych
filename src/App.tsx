@@ -93,6 +93,26 @@ function App() {
     setStoryDescription("");
   };
 
+  const handleDeleteStory = (id: string) => {
+    StoryService.delete(id);
+    if (activeProjectId) {
+      setStories(StoryService.getByProject(activeProjectId));
+    }
+  };
+
+  const handleChangeStatus = (story: Story, status: "todo" | "doing" | "done") => {
+    const updatedStory: Story = {
+      ...story,
+      status,
+    };
+
+    StoryService.update(updatedStory);
+
+    if (activeProjectId) {
+      setStories(StoryService.getByProject(activeProjectId));
+    }
+  };
+
   return (
     <div>
       <p>
@@ -164,6 +184,12 @@ function App() {
               <h4>{story.name}</h4>
               <p>{story.description}</p>
               <p>Status: {story.status}</p>
+
+              <button onClick={() => handleChangeStatus(story, "todo")}>TODO</button>
+              <button onClick={() => handleChangeStatus(story, "doing")}>DOING</button>
+              <button onClick={() => handleChangeStatus(story, "done")}>DONE</button>
+
+              <button onClick={() => handleDeleteStory(story.id)}>Usuń</button>
             </div>
           ))}
         </>
