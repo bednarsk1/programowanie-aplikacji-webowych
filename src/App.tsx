@@ -16,6 +16,7 @@ function App() {
   const [stories, setStories] = useState<Story[]>([]);
   const [storyName, setStoryName] = useState("");
   const [storyDescription, setStoryDescription] = useState("");
+  const [storyPriority, setStoryPriority] = useState<"low" | "medium" | "high">("medium");
 
   useEffect(() => {
   if (!activeProjectId) return;
@@ -79,7 +80,7 @@ function App() {
       id: crypto.randomUUID(),
       name: storyName,
       description: storyDescription,
-      priority: "medium",
+      priority: storyPriority,
       projectId: activeProjectId,
       createdAt: new Date().toISOString(),
       status: "todo",
@@ -177,21 +178,74 @@ function App() {
             onChange={(e) => setStoryDescription(e.target.value)}
           />
 
+          <select
+            value={storyPriority}
+            onChange={(e) => setStoryPriority(e.target.value as "low" | "medium" | "high")}
+          >
+            <option value="low">Niski priorytet</option>
+            <option value="medium">Średni priorytet</option>
+            <option value="high">Wysoki priorytet</option>
+          </select>
+
           <button onClick={handleAddStory}>Dodaj historyjkę</button>
 
-          {stories.map((story) => (
-            <div key={story.id}>
-              <h4>{story.name}</h4>
-              <p>{story.description}</p>
-              <p>Status: {story.status}</p>
+          <div style={{ display: "flex", gap: "40px", alignItems: "flex-start" }}>
 
-              <button onClick={() => handleChangeStatus(story, "todo")}>TODO</button>
-              <button onClick={() => handleChangeStatus(story, "doing")}>DOING</button>
-              <button onClick={() => handleChangeStatus(story, "done")}>DONE</button>
+            <div>
+              <h3>TODO</h3>
+              {stories
+                .filter((story) => story.status === "todo")
+                .map((story) => (
+                  <div key={story.id} style={{ border: "1px solid #ccc", padding: "8px", marginBottom: "10px" }}>
+                    <h4>{story.name}</h4>
+                    <p>{story.description}</p>
+                    <p>Priorytet: {story.priority}</p>
+                    <p>Utworzono: {new Date(story.createdAt).toLocaleDateString()}</p>
+                    <p>Status: {story.status}</p>
 
-              <button onClick={() => handleDeleteStory(story.id)}>Usuń</button>
+                    <button onClick={() => handleChangeStatus(story, "doing")}>Start</button>
+                    <button onClick={() => handleDeleteStory(story.id)}>Usuń</button>
+                  </div>
+                ))}
             </div>
-          ))}
+
+            <div>
+              <h3>DOING</h3>
+              {stories
+                .filter((story) => story.status === "doing")
+                .map((story) => (
+                  <div key={story.id} style={{ border: "1px solid #ccc", padding: "8px", marginBottom: "10px" }}>
+                    <h4>{story.name}</h4>
+                    <p>{story.description}</p>
+                    <p>Priorytet: {story.priority}</p>
+                    <p>Utworzono: {new Date(story.createdAt).toLocaleDateString()}</p>
+                    <p>Status: {story.status}</p>
+
+                    <button onClick={() => handleChangeStatus(story, "done")}>Zakończ</button>
+                    <button onClick={() => handleDeleteStory(story.id)}>Usuń</button>
+                  </div>
+                ))}
+            </div>
+
+            <div>
+              <h3>DONE</h3>
+              {stories
+                .filter((story) => story.status === "done")
+                .map((story) => (
+                  <div key={story.id} style={{ border: "1px solid #ccc", padding: "8px", marginBottom: "10px" }}>
+                    <h4>{story.name}</h4>
+                    <p>{story.description}</p>
+                    <p>Priorytet: {story.priority}</p>
+                    <p>Utworzono: {new Date(story.createdAt).toLocaleDateString()}</p>
+                    <p>Status: {story.status}</p>
+
+                    <button onClick={() => handleChangeStatus(story, "todo")}>Przywróć</button>
+                    <button onClick={() => handleDeleteStory(story.id)}>Usuń</button>
+                  </div>
+                ))}
+            </div>
+
+          </div>
         </>
       ) : (
         <p>Wybierz projekt aby zobaczyć historyjki</p>
