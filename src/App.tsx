@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { Project } from "./models/Project";
 import { ProjectService } from "./api/ProjectService";
 import { UserService } from "./api/UserService";
+import { ActiveProjectService } from "./api/ActiveProjectService";
 
 function App() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -9,6 +10,7 @@ function App() {
   const [description, setDescription] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const currentUser = UserService.getCurrentUser();
+  const [activeProjectId, setActiveProjectId] = useState<string | null>(ActiveProjectService.getActiveProject());
 
   useEffect(() => {
     const storedProjects = ProjectService.getAll();
@@ -53,12 +55,18 @@ function App() {
     setEditingId(project.id);
   };
 
+  const handleSelectProject = (id: string) => {
+    ActiveProjectService.setActiveProject(id);
+    setActiveProjectId(id);
+  };
+
   return (
     <div>
       <p>
         Zalogowany użytkownik: {currentUser.firstName} {currentUser.lastName}
       </p>
       <h1>ManageMe</h1>
+      <p>Aktywny projekt: {activeProjectId ?? "brak"}</p>
 
       <h2>Dodaj projekt</h2>
 
@@ -86,6 +94,9 @@ function App() {
         <div key={project.id}>
           <h3>{project.name}</h3>
           <p>{project.description}</p>
+          <button onClick={() => handleSelectProject(project.id)}>
+            Wybierz projekt
+          </button>
           <button onClick={() => handleDeleteProject(project.id)}>
             Usuń
           </button>
