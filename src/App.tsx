@@ -3,6 +3,8 @@ import type { Project } from "./models/Project";
 import { ProjectService } from "./api/ProjectService";
 import { UserService } from "./api/UserService";
 import { ActiveProjectService } from "./api/ActiveProjectService";
+import { StoryService } from "./api/StoryService";
+import type { Story } from "./models/Story";
 
 function App() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -11,6 +13,16 @@ function App() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const currentUser = UserService.getCurrentUser();
   const [activeProjectId, setActiveProjectId] = useState<string | null>(ActiveProjectService.getActiveProject());
+  const [stories, setStories] = useState<Story[]>([]);
+  const [storyName, setStoryName] = useState("");
+  const [storyDescription, setStoryDescription] = useState("");
+
+  useEffect(() => {
+  if (!activeProjectId) return;
+
+  const projectStories = StoryService.getByProject(activeProjectId);
+  setStories(projectStories);
+}, [activeProjectId]);
 
   useEffect(() => {
     const storedProjects = ProjectService.getAll();
@@ -60,6 +72,27 @@ function App() {
     setActiveProjectId(id);
   };
 
+  const handleAddStory = () => {
+    if (!activeProjectId) return;
+
+    const newStory: Story = {
+      id: crypto.randomUUID(),
+      name: storyName,
+      description: storyDescription,
+      priority: "medium",
+      projectId: activeProjectId,
+      createdAt: new Date().toISOString(),
+      status: "todo",
+      ownerId: currentUser.id,
+    };
+
+    StoryService.create(newStory);
+    setStories(StoryService.getByProject(activeProjectId));
+
+    setStoryName("");
+    setStoryDescription("");
+  };
+
   return (
     <div>
       <p>
@@ -105,6 +138,38 @@ function App() {
           </button>
         </div>
       ))}
+
+      <h2>Historyjki projektu</h2>
+
+      {activeProjectId ? (
+        <>
+          <input
+            type="text"
+            placeholder="Nazwa historyjki"
+            value={storyName}
+            onChange={(e) => setStoryName(e.target.value)}
+          />
+
+          <input
+            type="text"
+            placeholder="Opis historyjki"
+            value={storyDescription}
+            onChange={(e) => setStoryDescription(e.target.value)}
+          />
+
+          <button onClick={handleAddStory}>Dodaj historyjkę</button>
+
+          {stories.map((story) => (
+            <div key={story.id}>
+              <h4>{story.name}</h4>
+              <p>{story.description}</p>
+              <p>Status: {story.status}</p>
+            </div>
+          ))}
+        </>
+      ) : (
+        <p>Wybierz projekt aby zobaczyć historyjki</p>
+      )}
     </div>
   );
 }
