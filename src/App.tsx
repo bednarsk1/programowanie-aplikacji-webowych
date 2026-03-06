@@ -5,6 +5,7 @@ import { UserService } from "./api/UserService";
 import { ActiveProjectService } from "./api/ActiveProjectService";
 import { StoryService } from "./api/StoryService";
 import type { Story } from "./models/Story";
+import "./App.css";
 
 function App() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -17,6 +18,7 @@ function App() {
   const [storyName, setStoryName] = useState("");
   const [storyDescription, setStoryDescription] = useState("");
   const [storyPriority, setStoryPriority] = useState<"low" | "medium" | "high">("medium");
+  const activeProject = projects.find((p) => p.id === activeProjectId);
 
   useEffect(() => {
   if (!activeProjectId) return;
@@ -115,12 +117,14 @@ function App() {
   };
 
   return (
-    <div>
+    <div className="app-container">
       <p>
         Zalogowany użytkownik: {currentUser.firstName} {currentUser.lastName}
       </p>
       <h1>ManageMe</h1>
-      <p>Aktywny projekt: {activeProjectId ?? "brak"}</p>
+      <p>
+        Aktywny projekt: {activeProject ? `${activeProject.name} (ID: ${activeProject.id})` : "brak"}
+      </p>
 
       <h2>Dodaj projekt</h2>
 
@@ -128,6 +132,7 @@ function App() {
         type="text"
         placeholder="Nazwa projektu"
         value={name}
+        className="app-input"
         onChange={(e) => setName(e.target.value)}
       />
 
@@ -135,10 +140,11 @@ function App() {
         type="text"
         placeholder="Opis projektu"
         value={description}
+        className="app-input"
         onChange={(e) => setDescription(e.target.value)}
       />
 
-      <button onClick={handleAddProject}>
+      <button className="app-button" onClick={handleAddProject}>
         {editingId ? "Zapisz zmiany" : "Dodaj"}
       </button>
 
@@ -148,13 +154,13 @@ function App() {
         <div key={project.id}>
           <h3>{project.name}</h3>
           <p>{project.description}</p>
-          <button onClick={() => handleSelectProject(project.id)}>
+          <button className="app-button" onClick={() => handleSelectProject(project.id)}>
             Wybierz projekt
           </button>
-          <button onClick={() => handleDeleteProject(project.id)}>
+          <button className="app-button" onClick={() => handleDeleteProject(project.id)}>
             Usuń
           </button>
-          <button onClick={() => handleEditProject(project)}>
+          <button className="app-button" onClick={() => handleEditProject(project)}>
             Edytuj
           </button>
         </div>
@@ -168,6 +174,7 @@ function App() {
             type="text"
             placeholder="Nazwa historyjki"
             value={storyName}
+            className="app-input"
             onChange={(e) => setStoryName(e.target.value)}
           />
 
@@ -175,6 +182,7 @@ function App() {
             type="text"
             placeholder="Opis historyjki"
             value={storyDescription}
+            className="app-input"
             onChange={(e) => setStoryDescription(e.target.value)}
           />
 
@@ -187,24 +195,25 @@ function App() {
             <option value="high">Wysoki priorytet</option>
           </select>
 
-          <button onClick={handleAddStory}>Dodaj historyjkę</button>
+          <button className="app-button" onClick={handleAddStory}>Dodaj historyjkę</button>
 
-          <div style={{ display: "flex", gap: "40px", alignItems: "flex-start" }}>
+          <div className="kanban-board">
 
             <div>
               <h3>TODO</h3>
               {stories
                 .filter((story) => story.status === "todo")
                 .map((story) => (
-                  <div key={story.id} style={{ border: "1px solid #ccc", padding: "8px", marginBottom: "10px" }}>
+                  <div key={story.id} className="story-card">
                     <h4>{story.name}</h4>
                     <p>{story.description}</p>
                     <p>Priorytet: {story.priority}</p>
                     <p>Utworzono: {new Date(story.createdAt).toLocaleDateString()}</p>
                     <p>Status: {story.status}</p>
+                    <p>Właściciel: {story.ownerId}</p>
 
-                    <button onClick={() => handleChangeStatus(story, "doing")}>Start</button>
-                    <button onClick={() => handleDeleteStory(story.id)}>Usuń</button>
+                    <button className="app-button" onClick={() => handleChangeStatus(story, "doing")}>Start</button>
+                    <button className="app-button" onClick={() => handleDeleteStory(story.id)}>Usuń</button>
                   </div>
                 ))}
             </div>
@@ -214,15 +223,16 @@ function App() {
               {stories
                 .filter((story) => story.status === "doing")
                 .map((story) => (
-                  <div key={story.id} style={{ border: "1px solid #ccc", padding: "8px", marginBottom: "10px" }}>
+                  <div key={story.id} className="story-card">
                     <h4>{story.name}</h4>
                     <p>{story.description}</p>
                     <p>Priorytet: {story.priority}</p>
                     <p>Utworzono: {new Date(story.createdAt).toLocaleDateString()}</p>
                     <p>Status: {story.status}</p>
+                    <p>Właściciel: {story.ownerId}</p>
 
-                    <button onClick={() => handleChangeStatus(story, "done")}>Zakończ</button>
-                    <button onClick={() => handleDeleteStory(story.id)}>Usuń</button>
+                    <button className="app-button" onClick={() => handleChangeStatus(story, "done")}>Zakończ</button>
+                    <button className="app-button" onClick={() => handleDeleteStory(story.id)}>Usuń</button>
                   </div>
                 ))}
             </div>
@@ -232,15 +242,16 @@ function App() {
               {stories
                 .filter((story) => story.status === "done")
                 .map((story) => (
-                  <div key={story.id} style={{ border: "1px solid #ccc", padding: "8px", marginBottom: "10px" }}>
+                  <div key={story.id} className="story-card">
                     <h4>{story.name}</h4>
                     <p>{story.description}</p>
                     <p>Priorytet: {story.priority}</p>
                     <p>Utworzono: {new Date(story.createdAt).toLocaleDateString()}</p>
                     <p>Status: {story.status}</p>
+                    <p>Właściciel: {story.ownerId}</p>
 
-                    <button onClick={() => handleChangeStatus(story, "todo")}>Przywróć</button>
-                    <button onClick={() => handleDeleteStory(story.id)}>Usuń</button>
+                    <button className="app-button" onClick={() => handleChangeStatus(story, "todo")}>Przywróć</button>
+                    <button className="app-button" onClick={() => handleDeleteStory(story.id)}>Usuń</button>
                   </div>
                 ))}
             </div>

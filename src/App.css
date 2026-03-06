@@ -18,6 +18,40 @@
   filter: drop-shadow(0 0 2em #61dafbaa);
 }
 
+.app-container {
+  font-family: Arial, sans-serif;
+  max-width: 1000px;
+  margin: auto;
+  padding: 20px;
+}
+
+.app-input {
+  margin-right: 8px;
+  margin-bottom: 10px;
+  padding: 6px;
+}
+
+.app-button {
+  margin-right: 6px;
+  margin-top: 4px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.kanban-board {
+  display: flex;
+  gap: 40px;
+  align-items: flex-start;
+}
+
+.story-card {
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 10px;
+  margin-bottom: 10px;
+  background: #f9f9f9;
+}
+
 @keyframes logo-spin {
   from {
     transform: rotate(0deg);
