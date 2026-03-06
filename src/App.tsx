@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import type { Project } from "./models/Project";
 import { ProjectService } from "./api/ProjectService";
+import { UserService } from "./api/UserService";
 
 function App() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
+  const currentUser = UserService.getCurrentUser();
 
   useEffect(() => {
     const storedProjects = ProjectService.getAll();
@@ -53,6 +55,9 @@ function App() {
 
   return (
     <div>
+      <p>
+        Zalogowany użytkownik: {currentUser.firstName} {currentUser.lastName}
+      </p>
       <h1>ManageMe</h1>
 
       <h2>Dodaj projekt</h2>
