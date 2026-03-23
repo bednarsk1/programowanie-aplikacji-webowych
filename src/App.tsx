@@ -13,19 +13,24 @@ function App() {
   const [description, setDescription] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const currentUser = UserService.getCurrentUser();
-  const [activeProjectId, setActiveProjectId] = useState<string | null>(ActiveProjectService.getActiveProject());
+  const [activeProjectId, setActiveProjectId] = useState<string | null>(
+    ActiveProjectService.getActiveProject(),
+  );
   const [stories, setStories] = useState<Story[]>([]);
   const [storyName, setStoryName] = useState("");
   const [storyDescription, setStoryDescription] = useState("");
-  const [storyPriority, setStoryPriority] = useState<"low" | "medium" | "high">("medium");
+  const [storyPriority, setStoryPriority] = useState<"low" | "medium" | "high">(
+    "medium",
+  );
   const activeProject = projects.find((p) => p.id === activeProjectId);
+  const users = UserService.getAll();
 
   useEffect(() => {
-  if (!activeProjectId) return;
+    if (!activeProjectId) return;
 
-  const projectStories = StoryService.getByProject(activeProjectId);
-  setStories(projectStories);
-}, [activeProjectId]);
+    const projectStories = StoryService.getByProject(activeProjectId);
+    setStories(projectStories);
+  }, [activeProjectId]);
 
   useEffect(() => {
     const storedProjects = ProjectService.getAll();
@@ -103,7 +108,10 @@ function App() {
     }
   };
 
-  const handleChangeStatus = (story: Story, status: "todo" | "doing" | "done") => {
+  const handleChangeStatus = (
+    story: Story,
+    status: "todo" | "doing" | "done",
+  ) => {
     const updatedStory: Story = {
       ...story,
       status,
@@ -119,11 +127,15 @@ function App() {
   return (
     <div className="app-container">
       <p>
-        Zalogowany użytkownik: {currentUser.firstName} {currentUser.lastName}
+        Zalogowany użytkownik: {currentUser.firstName} {currentUser.lastName} (
+        {currentUser.role})
       </p>
       <h1>ManageMe</h1>
       <p>
-        Aktywny projekt: {activeProject ? `${activeProject.name} (ID: ${activeProject.id})` : "brak"}
+        Aktywny projekt:{" "}
+        {activeProject
+          ? `${activeProject.name} (ID: ${activeProject.id})`
+          : "brak"}
       </p>
 
       <h2>Dodaj projekt</h2>
@@ -154,13 +166,22 @@ function App() {
         <div key={project.id}>
           <h3>{project.name}</h3>
           <p>{project.description}</p>
-          <button className="app-button" onClick={() => handleSelectProject(project.id)}>
+          <button
+            className="app-button"
+            onClick={() => handleSelectProject(project.id)}
+          >
             Wybierz projekt
           </button>
-          <button className="app-button" onClick={() => handleDeleteProject(project.id)}>
+          <button
+            className="app-button"
+            onClick={() => handleDeleteProject(project.id)}
+          >
             Usuń
           </button>
-          <button className="app-button" onClick={() => handleEditProject(project)}>
+          <button
+            className="app-button"
+            onClick={() => handleEditProject(project)}
+          >
             Edytuj
           </button>
         </div>
@@ -188,17 +209,20 @@ function App() {
 
           <select
             value={storyPriority}
-            onChange={(e) => setStoryPriority(e.target.value as "low" | "medium" | "high")}
+            onChange={(e) =>
+              setStoryPriority(e.target.value as "low" | "medium" | "high")
+            }
           >
             <option value="low">Niski priorytet</option>
             <option value="medium">Średni priorytet</option>
             <option value="high">Wysoki priorytet</option>
           </select>
 
-          <button className="app-button" onClick={handleAddStory}>Dodaj historyjkę</button>
+          <button className="app-button" onClick={handleAddStory}>
+            Dodaj historyjkę
+          </button>
 
           <div className="kanban-board">
-
             <div>
               <h3>TODO</h3>
               {stories
@@ -208,12 +232,25 @@ function App() {
                     <h4>{story.name}</h4>
                     <p>{story.description}</p>
                     <p>Priorytet: {story.priority}</p>
-                    <p>Utworzono: {new Date(story.createdAt).toLocaleDateString()}</p>
+                    <p>
+                      Utworzono:{" "}
+                      {new Date(story.createdAt).toLocaleDateString()}
+                    </p>
                     <p>Status: {story.status}</p>
                     <p>Właściciel: {story.ownerId}</p>
 
-                    <button className="app-button" onClick={() => handleChangeStatus(story, "doing")}>Start</button>
-                    <button className="app-button" onClick={() => handleDeleteStory(story.id)}>Usuń</button>
+                    <button
+                      className="app-button"
+                      onClick={() => handleChangeStatus(story, "doing")}
+                    >
+                      Start
+                    </button>
+                    <button
+                      className="app-button"
+                      onClick={() => handleDeleteStory(story.id)}
+                    >
+                      Usuń
+                    </button>
                   </div>
                 ))}
             </div>
@@ -227,12 +264,25 @@ function App() {
                     <h4>{story.name}</h4>
                     <p>{story.description}</p>
                     <p>Priorytet: {story.priority}</p>
-                    <p>Utworzono: {new Date(story.createdAt).toLocaleDateString()}</p>
+                    <p>
+                      Utworzono:{" "}
+                      {new Date(story.createdAt).toLocaleDateString()}
+                    </p>
                     <p>Status: {story.status}</p>
                     <p>Właściciel: {story.ownerId}</p>
 
-                    <button className="app-button" onClick={() => handleChangeStatus(story, "done")}>Zakończ</button>
-                    <button className="app-button" onClick={() => handleDeleteStory(story.id)}>Usuń</button>
+                    <button
+                      className="app-button"
+                      onClick={() => handleChangeStatus(story, "done")}
+                    >
+                      Zakończ
+                    </button>
+                    <button
+                      className="app-button"
+                      onClick={() => handleDeleteStory(story.id)}
+                    >
+                      Usuń
+                    </button>
                   </div>
                 ))}
             </div>
@@ -246,16 +296,28 @@ function App() {
                     <h4>{story.name}</h4>
                     <p>{story.description}</p>
                     <p>Priorytet: {story.priority}</p>
-                    <p>Utworzono: {new Date(story.createdAt).toLocaleDateString()}</p>
+                    <p>
+                      Utworzono:{" "}
+                      {new Date(story.createdAt).toLocaleDateString()}
+                    </p>
                     <p>Status: {story.status}</p>
                     <p>Właściciel: {story.ownerId}</p>
 
-                    <button className="app-button" onClick={() => handleChangeStatus(story, "todo")}>Przywróć</button>
-                    <button className="app-button" onClick={() => handleDeleteStory(story.id)}>Usuń</button>
+                    <button
+                      className="app-button"
+                      onClick={() => handleChangeStatus(story, "todo")}
+                    >
+                      Przywróć
+                    </button>
+                    <button
+                      className="app-button"
+                      onClick={() => handleDeleteStory(story.id)}
+                    >
+                      Usuń
+                    </button>
                   </div>
                 ))}
             </div>
-
           </div>
         </>
       ) : (
