@@ -444,6 +444,26 @@ function App() {
                 className="app-input"
               />
 
+              <select
+                value={taskPriority}
+                onChange={(e) =>
+                  setTaskPriority(e.target.value as "low" | "medium" | "high")
+                }
+                className="app-input"
+              >
+                <option value="low">Niski priorytet</option>
+                <option value="medium">Średni priorytet</option>
+                <option value="high">Wysoki priorytet</option>
+              </select>
+
+              <input
+                type="number"
+                value={taskEstimatedTime}
+                onChange={(e) => setTaskEstimatedTime(Number(e.target.value))}
+                className="app-input"
+                placeholder="Czas (h)"
+              />
+
               <button className="app-button" onClick={handleAddTask}>
                 Dodaj zadanie
               </button>
@@ -457,6 +477,8 @@ function App() {
                       <div key={task.id} className="story-card">
                         <h4>{task.name}</h4>
                         <p>{task.description}</p>
+                        <p>Priorytet: {task.priority}</p>
+                        <p>Czas: {task.estimatedTime}h</p>
                         <p>Status: {task.status}</p>
                         <p>Przypisany: {task.userId ?? "brak"}</p>
 
@@ -496,6 +518,8 @@ function App() {
                       <div key={task.id} className="story-card">
                         <h4>{task.name}</h4>
                         <p>{task.description}</p>
+                        <p>Priorytet: {task.priority}</p>
+                        <p>Czas: {task.estimatedTime}h</p>
                         <p>Status: {task.status}</p>
                         <p>Przypisany: {task.userId ?? "brak"}</p>
 
@@ -517,6 +541,8 @@ function App() {
                       <div key={task.id} className="story-card">
                         <h4>{task.name}</h4>
                         <p>{task.description}</p>
+                        <p>Priorytet: {task.priority}</p>
+                        <p>Czas: {task.estimatedTime}h</p>
                         <p>Status: {task.status}</p>
                         <p>Przypisany: {task.userId ?? "brak"}</p>
                       </div>
