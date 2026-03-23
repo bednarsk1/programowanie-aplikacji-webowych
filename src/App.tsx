@@ -6,6 +6,8 @@ import { ActiveProjectService } from "./api/ActiveProjectService";
 import { StoryService } from "./api/StoryService";
 import type { Story } from "./models/Story";
 import "./App.css";
+import { TaskService } from "./api/TaskService";
+import type { Task } from "./models/Task";
 
 function App() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -24,6 +26,14 @@ function App() {
   );
   const activeProject = projects.find((p) => p.id === activeProjectId);
   const users = UserService.getAll();
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [taskName, setTaskName] = useState("");
+  const [taskDescription, setTaskDescription] = useState("");
+  const [taskPriority, setTaskPriority] = useState<"low" | "medium" | "high">(
+    "medium",
+  );
+  const [taskEstimatedTime, setTaskEstimatedTime] = useState(1);
+  const [activeStoryId, setActiveStoryId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!activeProjectId) return;
@@ -31,6 +41,13 @@ function App() {
     const projectStories = StoryService.getByProject(activeProjectId);
     setStories(projectStories);
   }, [activeProjectId]);
+
+  useEffect(() => {
+    if (!activeStoryId) return;
+
+    const storyTasks = TaskService.getByStory(activeStoryId);
+    setTasks(storyTasks);
+  }, [activeStoryId]);
 
   useEffect(() => {
     const storedProjects = ProjectService.getAll();
@@ -122,6 +139,27 @@ function App() {
     if (activeProjectId) {
       setStories(StoryService.getByProject(activeProjectId));
     }
+  };
+
+  const handleAddTask = () => {
+    if (!activeStoryId) return;
+
+    const newTask: Task = {
+      id: crypto.randomUUID(),
+      name: taskName,
+      description: taskDescription,
+      priority: taskPriority,
+      storyId: activeStoryId,
+      estimatedTime: taskEstimatedTime,
+      status: "todo",
+      createdAt: new Date().toISOString(),
+    };
+
+    TaskService.create(newTask);
+    setTasks(TaskService.getByStory(activeStoryId));
+
+    setTaskName("");
+    setTaskDescription("");
   };
 
   return (
@@ -238,6 +276,12 @@ function App() {
                     </p>
                     <p>Status: {story.status}</p>
                     <p>Właściciel: {story.ownerId}</p>
+                    <button
+                      className="app-button"
+                      onClick={() => setActiveStoryId(story.id)}
+                    >
+                      Wybierz story
+                    </button>
 
                     <button
                       className="app-button"
@@ -270,6 +314,12 @@ function App() {
                     </p>
                     <p>Status: {story.status}</p>
                     <p>Właściciel: {story.ownerId}</p>
+                    <button
+                      className="app-button"
+                      onClick={() => setActiveStoryId(story.id)}
+                    >
+                      Wybierz story
+                    </button>
 
                     <button
                       className="app-button"
@@ -302,6 +352,12 @@ function App() {
                     </p>
                     <p>Status: {story.status}</p>
                     <p>Właściciel: {story.ownerId}</p>
+                    <button
+                      className="app-button"
+                      onClick={() => setActiveStoryId(story.id)}
+                    >
+                      Wybierz story
+                    </button>
 
                     <button
                       className="app-button"
@@ -319,6 +375,42 @@ function App() {
                 ))}
             </div>
           </div>
+
+          <h2>Zadania</h2>
+
+          {activeStoryId ? (
+            <>
+              <input
+                type="text"
+                placeholder="Nazwa zadania"
+                value={taskName}
+                onChange={(e) => setTaskName(e.target.value)}
+                className="app-input"
+              />
+
+              <input
+                type="text"
+                placeholder="Opis zadania"
+                value={taskDescription}
+                onChange={(e) => setTaskDescription(e.target.value)}
+                className="app-input"
+              />
+
+              <button className="app-button" onClick={handleAddTask}>
+                Dodaj zadanie
+              </button>
+
+              {tasks.map((task) => (
+                <div key={task.id} className="story-card">
+                  <h4>{task.name}</h4>
+                  <p>{task.description}</p>
+                  <p>Status: {task.status}</p>
+                </div>
+              ))}
+            </>
+          ) : (
+            <p>Wybierz story aby zobaczyć zadania</p>
+          )}
         </>
       ) : (
         <p>Wybierz projekt aby zobaczyć historyjki</p>
