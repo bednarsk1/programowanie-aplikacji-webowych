@@ -34,6 +34,7 @@ function App() {
   );
   const [taskEstimatedTime, setTaskEstimatedTime] = useState(1);
   const [activeStoryId, setActiveStoryId] = useState<string | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<string>("");
 
   useEffect(() => {
     if (!activeProjectId) return;
@@ -160,6 +161,53 @@ function App() {
 
     setTaskName("");
     setTaskDescription("");
+  };
+
+  const handleAssignUser = (task: Task) => {
+    if (!selectedUserId) return;
+
+    const updatedTask: Task = {
+      ...task,
+      userId: selectedUserId,
+      status: "doing",
+      startDate: new Date().toISOString(),
+    };
+
+    TaskService.update(updatedTask);
+
+    if (activeStoryId) {
+      setTasks(TaskService.getByStory(activeStoryId));
+    }
+
+    // update story if needed
+    const story = stories.find((s) => s.id === activeStoryId);
+    if (story && story.status === "todo") {
+      handleChangeStatus(story, "doing");
+    }
+  };
+
+  const handleFinishTask = (task: Task) => {
+    const updatedTask: Task = {
+      ...task,
+      status: "done",
+      endDate: new Date().toISOString(),
+    };
+
+    TaskService.update(updatedTask);
+
+    if (activeStoryId) {
+      const updatedTasks = TaskService.getByStory(activeStoryId);
+      setTasks(updatedTasks);
+
+      // if all tasks done → update story
+      const allDone = updatedTasks.every((t) => t.status === "done");
+      if (allDone) {
+        const story = stories.find((s) => s.id === activeStoryId);
+        if (story) {
+          handleChangeStatus(story, "done");
+        }
+      }
+    }
   };
 
   return (
@@ -400,13 +448,81 @@ function App() {
                 Dodaj zadanie
               </button>
 
-              {tasks.map((task) => (
-                <div key={task.id} className="story-card">
-                  <h4>{task.name}</h4>
-                  <p>{task.description}</p>
-                  <p>Status: {task.status}</p>
+              <div className="kanban-board">
+                <div>
+                  <h3>TODO</h3>
+                  {tasks
+                    .filter((task) => task.status === "todo")
+                    .map((task) => (
+                      <div key={task.id} className="story-card">
+                        <h4>{task.name}</h4>
+                        <p>{task.description}</p>
+                        <p>Status: {task.status}</p>
+                        <p>Przypisany: {task.userId ?? "brak"}</p>
+
+                        <select
+                          value={selectedUserId}
+                          onChange={(e) => setSelectedUserId(e.target.value)}
+                          className="app-input"
+                        >
+                          <option value="">Wybierz użytkownika</option>
+                          {users
+                            .filter(
+                              (u) =>
+                                u.role === "developer" || u.role === "devops",
+                            )
+                            .map((u) => (
+                              <option key={u.id} value={u.id}>
+                                {u.firstName} ({u.role})
+                              </option>
+                            ))}
+                        </select>
+
+                        <button
+                          className="app-button"
+                          onClick={() => handleAssignUser(task)}
+                        >
+                          Przypisz
+                        </button>
+                      </div>
+                    ))}
                 </div>
-              ))}
+
+                <div>
+                  <h3>DOING</h3>
+                  {tasks
+                    .filter((task) => task.status === "doing")
+                    .map((task) => (
+                      <div key={task.id} className="story-card">
+                        <h4>{task.name}</h4>
+                        <p>{task.description}</p>
+                        <p>Status: {task.status}</p>
+                        <p>Przypisany: {task.userId ?? "brak"}</p>
+
+                        <button
+                          className="app-button"
+                          onClick={() => handleFinishTask(task)}
+                        >
+                          Zakończ
+                        </button>
+                      </div>
+                    ))}
+                </div>
+
+                <div>
+                  <h3>DONE</h3>
+                  {tasks
+                    .filter((task) => task.status === "done")
+                    .map((task) => (
+                      <div key={task.id} className="story-card">
+                        <h4>{task.name}</h4>
+                        <p>{task.description}</p>
+                        <p>Status: {task.status}</p>
+                        <p>Przypisany: {task.userId ?? "brak"}</p>
+                      </div>
+                    ))}
+                </div>
+              </div>
             </>
           ) : (
             <p>Wybierz story aby zobaczyć zadania</p>
