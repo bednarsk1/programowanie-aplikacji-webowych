@@ -5,9 +5,9 @@ import { UserService } from "./api/UserService";
 import { ActiveProjectService } from "./api/ActiveProjectService";
 import { StoryService } from "./api/StoryService";
 import type { Story } from "./models/Story";
-import "./App.css";
 import { TaskService } from "./api/TaskService";
 import type { Task } from "./models/Task";
+import "./App.css";
 
 function App() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -36,13 +36,6 @@ function App() {
   const [activeStoryId, setActiveStoryId] = useState<string | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [darkMode, setDarkMode] = useState(false);
-  useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  }, [darkMode]);
 
   useEffect(() => {
     if (!activeProjectId) return;
@@ -62,6 +55,14 @@ function App() {
     const storedProjects = ProjectService.getAll();
     setProjects(storedProjects);
   }, []);
+
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, [darkMode]);
 
   const handleAddProject = () => {
     if (!name.trim() || !description.trim()) return;
