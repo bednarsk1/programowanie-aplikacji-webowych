@@ -35,6 +35,14 @@ function App() {
   const [taskEstimatedTime, setTaskEstimatedTime] = useState(1);
   const [activeStoryId, setActiveStoryId] = useState<string | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<string>("");
+  const [darkMode, setDarkMode] = useState(false);
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, [darkMode]);
 
   useEffect(() => {
     if (!activeProjectId) return;
@@ -211,7 +219,15 @@ function App() {
   };
 
   return (
-    <div className="app-container">
+    <div className="min-h-screen bg-white text-black dark:bg-gray-900 dark:text-white p-6">
+      <div className="flex justify-end mb-4">
+        <button
+          className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-black dark:text-white rounded shadow"
+          onClick={() => setDarkMode(!darkMode)}
+        >
+          {darkMode ? "☀️ Light" : "🌙 Dark"}
+        </button>
+      </div>
       <p>
         Zalogowany użytkownik: {currentUser.firstName} {currentUser.lastName} (
         {currentUser.role})
@@ -230,7 +246,7 @@ function App() {
         type="text"
         placeholder="Nazwa projektu"
         value={name}
-        className="app-input"
+        className="border p-2 rounded bg-white dark:bg-gray-700 dark:text-white"
         onChange={(e) => setName(e.target.value)}
       />
 
@@ -238,11 +254,14 @@ function App() {
         type="text"
         placeholder="Opis projektu"
         value={description}
-        className="app-input"
+        className="border p-2 rounded bg-white dark:bg-gray-700 dark:text-white"
         onChange={(e) => setDescription(e.target.value)}
       />
 
-      <button className="app-button" onClick={handleAddProject}>
+      <button
+        className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+        onClick={handleAddProject}
+      >
         {editingId ? "Zapisz zmiany" : "Dodaj"}
       </button>
 
@@ -253,19 +272,19 @@ function App() {
           <h3>{project.name}</h3>
           <p>{project.description}</p>
           <button
-            className="app-button"
+            className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
             onClick={() => handleSelectProject(project.id)}
           >
             Wybierz projekt
           </button>
           <button
-            className="app-button"
+            className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
             onClick={() => handleDeleteProject(project.id)}
           >
             Usuń
           </button>
           <button
-            className="app-button"
+            className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
             onClick={() => handleEditProject(project)}
           >
             Edytuj
@@ -281,7 +300,7 @@ function App() {
             type="text"
             placeholder="Nazwa historyjki"
             value={storyName}
-            className="app-input"
+            className="border p-2 rounded bg-white dark:bg-gray-700 dark:text-white"
             onChange={(e) => setStoryName(e.target.value)}
           />
 
@@ -289,7 +308,7 @@ function App() {
             type="text"
             placeholder="Opis historyjki"
             value={storyDescription}
-            className="app-input"
+            className="border p-2 rounded bg-white dark:bg-gray-700 dark:text-white"
             onChange={(e) => setStoryDescription(e.target.value)}
           />
 
@@ -304,17 +323,23 @@ function App() {
             <option value="high">Wysoki priorytet</option>
           </select>
 
-          <button className="app-button" onClick={handleAddStory}>
+          <button
+            className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+            onClick={handleAddStory}
+          >
             Dodaj historyjkę
           </button>
 
-          <div className="kanban-board">
+          <div className="flex gap-6">
             <div>
               <h3>TODO</h3>
               {stories
                 .filter((story) => story.status === "todo")
                 .map((story) => (
-                  <div key={story.id} className="story-card">
+                  <div
+                    key={story.id}
+                    className="bg-gray-100 dark:bg-gray-800 p-4 rounded shadow"
+                  >
                     <h4>{story.name}</h4>
                     <p>{story.description}</p>
                     <p>Priorytet: {story.priority}</p>
@@ -325,20 +350,20 @@ function App() {
                     <p>Status: {story.status}</p>
                     <p>Właściciel: {story.ownerId}</p>
                     <button
-                      className="app-button"
+                      className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
                       onClick={() => setActiveStoryId(story.id)}
                     >
                       Wybierz story
                     </button>
 
                     <button
-                      className="app-button"
+                      className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
                       onClick={() => handleChangeStatus(story, "doing")}
                     >
                       Start
                     </button>
                     <button
-                      className="app-button"
+                      className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
                       onClick={() => handleDeleteStory(story.id)}
                     >
                       Usuń
@@ -352,7 +377,10 @@ function App() {
               {stories
                 .filter((story) => story.status === "doing")
                 .map((story) => (
-                  <div key={story.id} className="story-card">
+                  <div
+                    key={story.id}
+                    className="bg-gray-100 dark:bg-gray-800 p-4 rounded shadow"
+                  >
                     <h4>{story.name}</h4>
                     <p>{story.description}</p>
                     <p>Priorytet: {story.priority}</p>
@@ -363,20 +391,20 @@ function App() {
                     <p>Status: {story.status}</p>
                     <p>Właściciel: {story.ownerId}</p>
                     <button
-                      className="app-button"
+                      className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
                       onClick={() => setActiveStoryId(story.id)}
                     >
                       Wybierz story
                     </button>
 
                     <button
-                      className="app-button"
+                      className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
                       onClick={() => handleChangeStatus(story, "done")}
                     >
                       Zakończ
                     </button>
                     <button
-                      className="app-button"
+                      className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
                       onClick={() => handleDeleteStory(story.id)}
                     >
                       Usuń
@@ -390,7 +418,10 @@ function App() {
               {stories
                 .filter((story) => story.status === "done")
                 .map((story) => (
-                  <div key={story.id} className="story-card">
+                  <div
+                    key={story.id}
+                    className="bg-gray-100 dark:bg-gray-800 p-4 rounded shadow"
+                  >
                     <h4>{story.name}</h4>
                     <p>{story.description}</p>
                     <p>Priorytet: {story.priority}</p>
@@ -401,20 +432,20 @@ function App() {
                     <p>Status: {story.status}</p>
                     <p>Właściciel: {story.ownerId}</p>
                     <button
-                      className="app-button"
+                      className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
                       onClick={() => setActiveStoryId(story.id)}
                     >
                       Wybierz story
                     </button>
 
                     <button
-                      className="app-button"
+                      className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
                       onClick={() => handleChangeStatus(story, "todo")}
                     >
                       Przywróć
                     </button>
                     <button
-                      className="app-button"
+                      className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
                       onClick={() => handleDeleteStory(story.id)}
                     >
                       Usuń
@@ -433,7 +464,7 @@ function App() {
                 placeholder="Nazwa zadania"
                 value={taskName}
                 onChange={(e) => setTaskName(e.target.value)}
-                className="app-input"
+                className="border p-2 rounded bg-white dark:bg-gray-700 dark:text-white"
               />
 
               <input
@@ -441,7 +472,7 @@ function App() {
                 placeholder="Opis zadania"
                 value={taskDescription}
                 onChange={(e) => setTaskDescription(e.target.value)}
-                className="app-input"
+                className="border p-2 rounded bg-white dark:bg-gray-700 dark:text-white"
               />
 
               <select
@@ -449,7 +480,7 @@ function App() {
                 onChange={(e) =>
                   setTaskPriority(e.target.value as "low" | "medium" | "high")
                 }
-                className="app-input"
+                className="border p-2 rounded bg-white dark:bg-gray-700 dark:text-white"
               >
                 <option value="low">Niski priorytet</option>
                 <option value="medium">Średni priorytet</option>
@@ -460,21 +491,27 @@ function App() {
                 type="number"
                 value={taskEstimatedTime}
                 onChange={(e) => setTaskEstimatedTime(Number(e.target.value))}
-                className="app-input"
+                className="border p-2 rounded bg-white dark:bg-gray-700 dark:text-white"
                 placeholder="Czas (h)"
               />
 
-              <button className="app-button" onClick={handleAddTask}>
+              <button
+                className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                onClick={handleAddTask}
+              >
                 Dodaj zadanie
               </button>
 
-              <div className="kanban-board">
+              <div className="flex gap-6">
                 <div>
                   <h3>TODO</h3>
                   {tasks
                     .filter((task) => task.status === "todo")
                     .map((task) => (
-                      <div key={task.id} className="story-card">
+                      <div
+                        key={task.id}
+                        className="bg-gray-100 dark:bg-gray-800 p-4 rounded shadow"
+                      >
                         <h4>{task.name}</h4>
                         <p>{task.description}</p>
                         <p>Priorytet: {task.priority}</p>
@@ -485,7 +522,7 @@ function App() {
                         <select
                           value={selectedUserId}
                           onChange={(e) => setSelectedUserId(e.target.value)}
-                          className="app-input"
+                          className="border p-2 rounded bg-white dark:bg-gray-700 dark:text-white"
                         >
                           <option value="">Wybierz użytkownika</option>
                           {users
@@ -501,7 +538,7 @@ function App() {
                         </select>
 
                         <button
-                          className="app-button"
+                          className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
                           onClick={() => handleAssignUser(task)}
                         >
                           Przypisz
@@ -515,7 +552,10 @@ function App() {
                   {tasks
                     .filter((task) => task.status === "doing")
                     .map((task) => (
-                      <div key={task.id} className="story-card">
+                      <div
+                        key={task.id}
+                        className="bg-gray-100 dark:bg-gray-800 p-4 rounded shadow"
+                      >
                         <h4>{task.name}</h4>
                         <p>{task.description}</p>
                         <p>Priorytet: {task.priority}</p>
@@ -524,7 +564,7 @@ function App() {
                         <p>Przypisany: {task.userId ?? "brak"}</p>
 
                         <button
-                          className="app-button"
+                          className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
                           onClick={() => handleFinishTask(task)}
                         >
                           Zakończ
@@ -538,7 +578,10 @@ function App() {
                   {tasks
                     .filter((task) => task.status === "done")
                     .map((task) => (
-                      <div key={task.id} className="story-card">
+                      <div
+                        key={task.id}
+                        className="bg-gray-100 dark:bg-gray-800 p-4 rounded shadow"
+                      >
                         <h4>{task.name}</h4>
                         <p>{task.description}</p>
                         <p>Priorytet: {task.priority}</p>
