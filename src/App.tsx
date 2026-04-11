@@ -7,7 +7,8 @@ import { StoryService } from "./api/StoryService";
 import type { Story } from "./models/Story";
 import { TaskService } from "./api/TaskService";
 import type { Task } from "./models/Task";
-import "./App.css";
+import { NotificationService } from "./api/NotificationService";
+import type { Notification } from "./models/Notification";
 
 function App() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -15,6 +16,7 @@ function App() {
   const [description, setDescription] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const currentUser = UserService.getCurrentUser();
+  const [showNotifications, setShowNotifications] = useState(false);
   const [activeProjectId, setActiveProjectId] = useState<string | null>(
     ActiveProjectService.getActiveProject(),
   );
@@ -32,10 +34,33 @@ function App() {
   const [taskPriority, setTaskPriority] = useState<"low" | "medium" | "high">(
     "medium",
   );
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [toast, setToast] = useState<Notification | null>(null);
+  const [selectedNotification, setSelectedNotification] =
+    useState<Notification | null>(null);
   const [taskEstimatedTime, setTaskEstimatedTime] = useState(1);
   const [activeStoryId, setActiveStoryId] = useState<string | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [darkMode, setDarkMode] = useState(false);
+
+  useEffect(() => {
+    const userNotifications = NotificationService.getForUser(currentUser.id);
+    setNotifications(userNotifications);
+  }, []);
+
+  useEffect(() => {
+    const unread = notifications.find(
+      (n) => !n.isRead && (n.priority === "medium" || n.priority === "high"),
+    );
+
+    if (unread) {
+      setToast(unread);
+
+      setTimeout(() => {
+        setToast(null);
+      }, 4000);
+    }
+  }, [notifications]);
 
   useEffect(() => {
     if (!activeProjectId) return;
@@ -89,6 +114,17 @@ function App() {
     setProjects(ProjectService.getAll());
     setName("");
     setDescription("");
+
+    NotificationService.create({
+      id: crypto.randomUUID(),
+      title: "Nowy projekt",
+      message: "Utworzono nowy projekt",
+      date: new Date().toISOString(),
+      priority: "high",
+      isRead: false,
+      recipientId: currentUser.id,
+    });
+    setNotifications(NotificationService.getForUser(currentUser.id));
   };
 
   const handleDeleteProject = (id: string) => {
@@ -168,6 +204,20 @@ function App() {
     TaskService.create(newTask);
     setTasks(TaskService.getByStory(activeStoryId));
 
+    const story = stories.find((s) => s.id === activeStoryId);
+    if (story) {
+      NotificationService.create({
+        id: crypto.randomUUID(),
+        title: "Nowe zadanie",
+        message: `Dodano zadanie do historyjki: ${story.name}`,
+        date: new Date().toISOString(),
+        priority: "medium",
+        isRead: false,
+        recipientId: story.ownerId,
+      });
+      setNotifications(NotificationService.getForUser(currentUser.id));
+    }
+
     setTaskName("");
     setTaskDescription("");
   };
@@ -184,12 +234,35 @@ function App() {
 
     TaskService.update(updatedTask);
 
+    NotificationService.create({
+      id: crypto.randomUUID(),
+      title: "Przypisano zadanie",
+      message: `Zadanie ${task.name} zostało przypisane`,
+      date: new Date().toISOString(),
+      priority: "high",
+      isRead: false,
+      recipientId: selectedUserId,
+    });
+
+    const story = stories.find((s) => s.id === activeStoryId);
+    if (story) {
+      NotificationService.create({
+        id: crypto.randomUUID(),
+        title: "Zadanie w trakcie",
+        message: `Zadanie ${task.name} ma status DOING`,
+        date: new Date().toISOString(),
+        priority: "low",
+        isRead: false,
+        recipientId: story.ownerId,
+      });
+    }
+
+    setNotifications(NotificationService.getForUser(currentUser.id));
+
     if (activeStoryId) {
       setTasks(TaskService.getByStory(activeStoryId));
     }
 
-    // update story if needed
-    const story = stories.find((s) => s.id === activeStoryId);
     if (story && story.status === "todo") {
       handleChangeStatus(story, "doing");
     }
@@ -203,6 +276,17 @@ function App() {
     };
 
     TaskService.update(updatedTask);
+
+    NotificationService.create({
+      id: crypto.randomUUID(),
+      title: "Zadanie zakończone",
+      message: `Zadanie ${task.name} zostało zakończone`,
+      date: new Date().toISOString(),
+      priority: "medium",
+      isRead: false,
+      recipientId: currentUser.id,
+    });
+    setNotifications(NotificationService.getForUser(currentUser.id));
 
     if (activeStoryId) {
       const updatedTasks = TaskService.getByStory(activeStoryId);
@@ -229,10 +313,110 @@ function App() {
           {darkMode ? "☀️ Light" : "🌙 Dark"}
         </button>
       </div>
-      <p>
-        Zalogowany użytkownik: {currentUser.firstName} {currentUser.lastName} (
-        {currentUser.role})
-      </p>
+      <div className="flex justify-between items-center mb-4">
+        <div>
+          Zalogowany użytkownik: {currentUser.firstName} {currentUser.lastName}{" "}
+          ({currentUser.role})
+        </div>
+
+        <button
+          onClick={() => setShowNotifications(!showNotifications)}
+          className="relative px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded"
+        >
+          🔔
+          {notifications.filter((n) => !n.isRead).length > 0 && (
+            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 rounded-full">
+              {notifications.filter((n) => !n.isRead).length}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {showNotifications && (
+        <div className="bg-white dark:bg-gray-800 border p-4 rounded shadow mb-4">
+          <h3 className="font-bold mb-2">Powiadomienia</h3>
+
+          {notifications.filter((n) => !n.isRead).length === 0 && (
+            <p>Brak powiadomień</p>
+          )}
+
+          {notifications
+            .filter((n) => !n.isRead)
+            .map((n) => (
+              <div
+                key={n.id}
+                className="p-2 border-b font-semibold cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                onClick={() => {
+                  setSelectedNotification(n);
+                  NotificationService.markAsRead(n.id);
+                  setNotifications(
+                    NotificationService.getForUser(currentUser.id),
+                  );
+                }}
+              >
+                <p>{n.title}</p>
+                <p className="text-sm">{n.message}</p>
+                <p className="text-xs">{new Date(n.date).toLocaleString()}</p>
+
+                {!n.isRead && (
+                  <button
+                    className="text-blue-500 text-sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      NotificationService.markAsRead(n.id);
+                      setNotifications(
+                        NotificationService.getForUser(currentUser.id),
+                      );
+                    }}
+                  >
+                    Oznacz jako przeczytane
+                  </button>
+                )}
+              </div>
+            ))}
+        </div>
+      )}
+
+      {toast && (
+        <div className="fixed bottom-4 right-4 bg-white dark:bg-gray-800 border shadow-lg p-4 rounded w-80 z-50">
+          <h4 className="font-bold">{toast.title}</h4>
+          <p className="text-sm">{toast.message}</p>
+
+          <button
+            className="text-blue-500 text-sm mt-2"
+            onClick={() => {
+              NotificationService.markAsRead(toast.id);
+              setNotifications(NotificationService.getForUser(currentUser.id));
+              setToast(null);
+            }}
+          >
+            OK
+          </button>
+        </div>
+      )}
+
+      {selectedNotification && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded shadow w-96">
+            <h3 className="text-lg font-bold mb-2">
+              {selectedNotification.title}
+            </h3>
+
+            <p className="mb-2">{selectedNotification.message}</p>
+
+            <p className="text-sm text-gray-500 mb-4">
+              {new Date(selectedNotification.date).toLocaleString()}
+            </p>
+
+            <button
+              className="px-3 py-1 bg-blue-500 text-white rounded"
+              onClick={() => setSelectedNotification(null)}
+            >
+              Zamknij
+            </button>
+          </div>
+        </div>
+      )}
       <h1>ManageMe</h1>
       <p>
         Aktywny projekt:{" "}
@@ -543,6 +727,36 @@ function App() {
                           onClick={() => handleAssignUser(task)}
                         >
                           Przypisz
+                        </button>
+                        <button
+                          className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 ml-2"
+                          onClick={() => {
+                            TaskService.delete(task.id);
+                            if (activeStoryId) {
+                              setTasks(TaskService.getByStory(activeStoryId));
+                            }
+
+                            const story = stories.find(
+                              (s) => s.id === activeStoryId,
+                            );
+                            if (story) {
+                              NotificationService.create({
+                                id: crypto.randomUUID(),
+                                title: "Usunięto zadanie",
+                                message: `Zadanie ${task.name} zostało usunięte`,
+                                date: new Date().toISOString(),
+                                priority: "medium",
+                                isRead: false,
+                                recipientId: story.ownerId,
+                              });
+
+                              setNotifications(
+                                NotificationService.getForUser(currentUser.id),
+                              );
+                            }
+                          }}
+                        >
+                          Usuń
                         </button>
                       </div>
                     ))}
