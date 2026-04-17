@@ -322,7 +322,30 @@ function App() {
             className="w-full bg-blue-500 text-white p-2 rounded"
             onClick={() => {
               if (!email) return;
-              UserService.login(email);
+
+              const existingUsers = UserService.getAll();
+              const existing = existingUsers.find((u) => u.email === email);
+
+              const user = UserService.login(email);
+
+              if (!existing) {
+                const admins = UserService.getAll().filter(
+                  (u) => u.role === "admin",
+                );
+
+                admins.forEach((admin) => {
+                  NotificationService.create({
+                    id: crypto.randomUUID(),
+                    title: "Nowy użytkownik",
+                    message: `Nowe konto: ${email}`,
+                    date: new Date().toISOString(),
+                    priority: "high",
+                    isRead: false,
+                    recipientId: admin.id,
+                  });
+                });
+              }
+
               window.location.reload();
             }}
           >
@@ -339,6 +362,17 @@ function App() {
         <div className="p-6 border rounded shadow">
           <h2 className="text-xl mb-4">Oczekiwanie na zatwierdzenie</h2>
           <p>Twoje konto oczekuje na zatwierdzenie przez administratora</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (currentUser.isBlocked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="p-6 border rounded shadow">
+          <h2 className="text-xl mb-4">Konto zablokowane</h2>
+          <p>Nie masz dostępu do aplikacji</p>
         </div>
       </div>
     );
@@ -459,6 +493,50 @@ function App() {
         </div>
       )}
       <h1>ManageMe</h1>
+
+      {currentUser.role === "admin" && (
+        <div className="mb-6 p-4 border rounded">
+          <h2 className="text-lg font-bold mb-2">Użytkownicy</h2>
+
+          {users.map((u) => (
+            <div key={u.id} className="flex items-center gap-2 mb-2">
+              <span className="w-48">{u.email}</span>
+
+              <select
+                value={u.role}
+                onChange={(e) => {
+                  UserService.update({
+                    ...u,
+                    role: e.target.value as any,
+                  });
+                  window.location.reload();
+                }}
+                className="border p-1 rounded"
+              >
+                <option value="admin">admin</option>
+                <option value="developer">developer</option>
+                <option value="devops">devops</option>
+                <option value="guest">guest</option>
+              </select>
+
+              <label className="flex items-center gap-1">
+                <input
+                  type="checkbox"
+                  checked={u.isBlocked}
+                  onChange={(e) => {
+                    UserService.update({
+                      ...u,
+                      isBlocked: e.target.checked,
+                    });
+                    window.location.reload();
+                  }}
+                />
+                zablokowany
+              </label>
+            </div>
+          ))}
+        </div>
+      )}
       <p>
         Aktywny projekt:{" "}
         {activeProject
