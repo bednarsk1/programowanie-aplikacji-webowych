@@ -42,11 +42,14 @@ function App() {
   const [activeStoryId, setActiveStoryId] = useState<string | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [darkMode, setDarkMode] = useState(false);
+  const [email, setEmail] = useState("");
 
   useEffect(() => {
-    const userNotifications = NotificationService.getForUser(currentUser.id);
+    if (!currentUser) return;
+
+    const userNotifications = NotificationService.getForUser(currentUser!.id);
     setNotifications(userNotifications);
-  }, []);
+  }, [currentUser]);
 
   useEffect(() => {
     const unread = notifications.find(
@@ -122,9 +125,9 @@ function App() {
       date: new Date().toISOString(),
       priority: "high",
       isRead: false,
-      recipientId: currentUser.id,
+      recipientId: currentUser!.id,
     });
-    setNotifications(NotificationService.getForUser(currentUser.id));
+    setNotifications(NotificationService.getForUser(currentUser!.id));
   };
 
   const handleDeleteProject = (id: string) => {
@@ -154,7 +157,7 @@ function App() {
       projectId: activeProjectId,
       createdAt: new Date().toISOString(),
       status: "todo",
-      ownerId: currentUser.id,
+      ownerId: currentUser!.id,
     };
 
     StoryService.create(newStory);
@@ -215,7 +218,7 @@ function App() {
         isRead: false,
         recipientId: story.ownerId,
       });
-      setNotifications(NotificationService.getForUser(currentUser.id));
+      setNotifications(NotificationService.getForUser(currentUser!.id));
     }
 
     setTaskName("");
@@ -257,7 +260,7 @@ function App() {
       });
     }
 
-    setNotifications(NotificationService.getForUser(currentUser.id));
+    setNotifications(NotificationService.getForUser(currentUser!.id));
 
     if (activeStoryId) {
       setTasks(TaskService.getByStory(activeStoryId));
@@ -284,15 +287,14 @@ function App() {
       date: new Date().toISOString(),
       priority: "medium",
       isRead: false,
-      recipientId: currentUser.id,
+      recipientId: currentUser!.id,
     });
-    setNotifications(NotificationService.getForUser(currentUser.id));
+    setNotifications(NotificationService.getForUser(currentUser!.id));
 
     if (activeStoryId) {
       const updatedTasks = TaskService.getByStory(activeStoryId);
       setTasks(updatedTasks);
 
-      // if all tasks done → update story
       const allDone = updatedTasks.every((t) => t.status === "done");
       if (allDone) {
         const story = stories.find((s) => s.id === activeStoryId);
@@ -302,6 +304,45 @@ function App() {
       }
     }
   };
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="p-6 border rounded shadow w-80">
+          <h2 className="text-xl mb-4">Logowanie</h2>
+
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="border p-2 w-full mb-3 rounded"
+          />
+
+          <button
+            className="w-full bg-blue-500 text-white p-2 rounded"
+            onClick={() => {
+              if (!email) return;
+              UserService.login(email);
+              window.location.reload();
+            }}
+          >
+            Zaloguj przez Google
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (currentUser.role === "guest") {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="p-6 border rounded shadow">
+          <h2 className="text-xl mb-4">Oczekiwanie na zatwierdzenie</h2>
+          <p>Twoje konto oczekuje na zatwierdzenie przez administratora</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white text-black dark:bg-gray-900 dark:text-white p-6">
@@ -315,8 +356,8 @@ function App() {
       </div>
       <div className="flex justify-between items-center mb-4">
         <div>
-          Zalogowany użytkownik: {currentUser.firstName} {currentUser.lastName}{" "}
-          ({currentUser.role})
+          Zalogowany użytkownik: {currentUser!.email} ({currentUser!.role}) (
+          {currentUser!.role})
         </div>
 
         <button
@@ -350,7 +391,7 @@ function App() {
                   setSelectedNotification(n);
                   NotificationService.markAsRead(n.id);
                   setNotifications(
-                    NotificationService.getForUser(currentUser.id),
+                    NotificationService.getForUser(currentUser!.id),
                   );
                 }}
               >
@@ -365,7 +406,7 @@ function App() {
                       e.stopPropagation();
                       NotificationService.markAsRead(n.id);
                       setNotifications(
-                        NotificationService.getForUser(currentUser.id),
+                        NotificationService.getForUser(currentUser!.id),
                       );
                     }}
                   >
@@ -386,7 +427,7 @@ function App() {
             className="text-blue-500 text-sm mt-2"
             onClick={() => {
               NotificationService.markAsRead(toast.id);
-              setNotifications(NotificationService.getForUser(currentUser.id));
+              setNotifications(NotificationService.getForUser(currentUser!.id));
               setToast(null);
             }}
           >
@@ -717,7 +758,7 @@ function App() {
                             )
                             .map((u) => (
                               <option key={u.id} value={u.id}>
-                                {u.firstName} ({u.role})
+                                {u.email} ({u.role})
                               </option>
                             ))}
                         </select>
