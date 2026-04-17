@@ -574,7 +574,7 @@ function App() {
                       {new Date(story.createdAt).toLocaleDateString()}
                     </p>
                     <p>Status: {story.status}</p>
-                    <p>Właściciel: {story.ownerId}</p>
+                    <p>Właściciell: {story.ownerId}</p>
                     <button
                       className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
                       onClick={() => setActiveStoryId(story.id)}
