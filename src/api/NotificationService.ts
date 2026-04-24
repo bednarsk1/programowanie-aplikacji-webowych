@@ -1,11 +1,32 @@
 import type { Notification } from "../models/Notification";
+import { STORAGE_TYPE } from "../config/storage";
+import { db } from "../firebase";
+import {
+  collection,
+  addDoc,
+  getDocs,
+  updateDoc,
+  doc,
+} from "firebase/firestore";
 
 const KEY = "manageme_notifications";
 
 export const NotificationService = {
   getAll(): Notification[] {
-    const data = localStorage.getItem(KEY);
-    return data ? JSON.parse(data) : [];
+    if (STORAGE_TYPE !== "firebase") {
+      const data = localStorage.getItem(KEY);
+      return data ? JSON.parse(data) : [];
+    }
+
+    const notifications: Notification[] = [];
+
+    getDocs(collection(db, "notifications")).then((snapshot) => {
+      snapshot.forEach((docItem) => {
+        notifications.push(docItem.data() as Notification);
+      });
+    });
+
+    return notifications;
   },
 
   getForUser(userId: string): Notification[] {
@@ -13,16 +34,33 @@ export const NotificationService = {
   },
 
   create(notification: Notification) {
-    const notifications = this.getAll();
-    notifications.push(notification);
-    localStorage.setItem(KEY, JSON.stringify(notifications));
+    if (STORAGE_TYPE !== "firebase") {
+      const notifications = this.getAll();
+      notifications.push(notification);
+      localStorage.setItem(KEY, JSON.stringify(notifications));
+      return;
+    }
+
+    addDoc(collection(db, "notifications"), { ...notification });
   },
 
   markAsRead(id: string) {
-    const notifications = this.getAll().map((n) =>
-      n.id === id ? { ...n, isRead: true } : n,
-    );
+    if (STORAGE_TYPE !== "firebase") {
+      const notifications = this.getAll().map((n) =>
+        n.id === id ? { ...n, isRead: true } : n,
+      );
 
-    localStorage.setItem(KEY, JSON.stringify(notifications));
+      localStorage.setItem(KEY, JSON.stringify(notifications));
+      return;
+    }
+
+    const notification = this.getAll().find((n) => n.id === id);
+
+    if (!notification) return;
+
+    updateDoc(doc(db, "notifications", id), {
+      ...notification,
+      isRead: true,
+    });
   },
 };

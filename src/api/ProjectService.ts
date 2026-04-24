@@ -1,60 +1,90 @@
-import type { Project } from "../models/Project";
+import type { User } from "../models/User";
 import { STORAGE_TYPE } from "../config/storage";
 import { db } from "../firebase";
 import {
   collection,
   addDoc,
-  deleteDoc,
-  doc,
+  getDocs,
   updateDoc,
+  doc,
 } from "firebase/firestore";
 
-const STORAGE_KEY = "manageme_projects";
+const USERS_KEY = "manageme_users";
+const CURRENT_USER_KEY = "manageme_current_user";
+const SUPER_ADMIN_EMAIL = "bednarskipiotrpawel@gmail.com";
 
-export class ProjectService {
-  static getAll(): Project[] {
+export class UserService {
+  static getAll(): User[] {
     if (STORAGE_TYPE !== "firebase") {
-      const data = localStorage.getItem(STORAGE_KEY);
+      const data = localStorage.getItem(USERS_KEY);
       return data ? JSON.parse(data) : [];
     }
 
-    return [];
+    const users: User[] = [];
+
+    getDocs(collection(db, "users")).then((snapshot) => {
+      snapshot.forEach((docItem) => {
+        users.push(docItem.data() as User);
+      });
+    });
+
+    return users;
   }
 
-  static saveAll(projects: Project[]) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+  static saveAll(users: User[]) {
+    localStorage.setItem(USERS_KEY, JSON.stringify(users));
   }
 
-  static create(project: Project) {
-    if (STORAGE_TYPE !== "firebase") {
-      const projects = this.getAll();
-      projects.push(project);
-      this.saveAll(projects);
-      return;
+  static getCurrentUser(): User | null {
+    const data = localStorage.getItem(CURRENT_USER_KEY);
+    return data ? JSON.parse(data) : null;
+  }
+
+  static setCurrentUser(user: User) {
+    localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
+  }
+
+  static login(email: string): User {
+    const users = this.getAll();
+
+    let user = users.find((u) => u.email === email);
+
+    if (!user) {
+      user = {
+        id: crypto.randomUUID(),
+        email,
+        role: email === SUPER_ADMIN_EMAIL ? "admin" : "guest",
+        isBlocked: false,
+      };
+
+      if (STORAGE_TYPE !== "firebase") {
+        users.push(user);
+        this.saveAll(users);
+      } else {
+        addDoc(collection(db, "users"), { ...user });
+      }
     }
 
-    addDoc(collection(db, "projects"), { ...project });
+    this.setCurrentUser(user);
+    return user;
   }
 
-  static update(updatedProject: Project) {
+  static update(updatedUser: User) {
     if (STORAGE_TYPE !== "firebase") {
-      const projects = this.getAll().map((project) =>
-        project.id === updatedProject.id ? updatedProject : project,
+      const users = this.getAll().map((u) =>
+        u.id === updatedUser.id ? updatedUser : u,
       );
-      this.saveAll(projects);
-      return;
+
+      this.saveAll(users);
+    } else {
+      updateDoc(doc(db, "users", updatedUser.id), {
+        ...updatedUser,
+      });
     }
 
-    updateDoc(doc(db, "projects", updatedProject.id), { ...updatedProject });
-  }
-
-  static delete(id: string) {
-    if (STORAGE_TYPE !== "firebase") {
-      const projects = this.getAll().filter((project) => project.id !== id);
-      this.saveAll(projects);
-      return;
+    const current = this.getCurrentUser();
+    if (current && current.id === updatedUser.id) {
+      this.setCurrentUser(updatedUser);
     }
-
-    deleteDoc(doc(db, "projects", id));
   }
 }

@@ -1,4 +1,13 @@
 import type { User } from "../models/User";
+import { STORAGE_TYPE } from "../config/storage";
+import { db } from "../firebase";
+import {
+  collection,
+  addDoc,
+  getDocs,
+  updateDoc,
+  doc,
+} from "firebase/firestore";
 
 const USERS_KEY = "manageme_users";
 const CURRENT_USER_KEY = "manageme_current_user";
@@ -6,8 +15,20 @@ const SUPER_ADMIN_EMAIL = "bednarskipiotrpawel@gmail.com";
 
 export class UserService {
   static getAll(): User[] {
-    const data = localStorage.getItem(USERS_KEY);
-    return data ? JSON.parse(data) : [];
+    if (STORAGE_TYPE !== "firebase") {
+      const data = localStorage.getItem(USERS_KEY);
+      return data ? JSON.parse(data) : [];
+    }
+
+    const users: User[] = [];
+
+    getDocs(collection(db, "users")).then((snapshot) => {
+      snapshot.forEach((docItem) => {
+        users.push(docItem.data() as User);
+      });
+    });
+
+    return users;
   }
 
   static saveAll(users: User[]) {
@@ -36,8 +57,12 @@ export class UserService {
         isBlocked: false,
       };
 
-      users.push(user);
-      this.saveAll(users);
+      if (STORAGE_TYPE !== "firebase") {
+        users.push(user);
+        this.saveAll(users);
+      } else {
+        addDoc(collection(db, "users"), { ...user });
+      }
     }
 
     this.setCurrentUser(user);
@@ -46,11 +71,17 @@ export class UserService {
   }
 
   static update(updatedUser: User) {
-    const users = this.getAll().map((u) =>
-      u.id === updatedUser.id ? updatedUser : u,
-    );
+    if (STORAGE_TYPE !== "firebase") {
+      const users = this.getAll().map((u) =>
+        u.id === updatedUser.id ? updatedUser : u,
+      );
 
-    this.saveAll(users);
+      this.saveAll(users);
+    } else {
+      updateDoc(doc(db, "users", updatedUser.id), {
+        ...updatedUser,
+      });
+    }
 
     const current = this.getCurrentUser();
     if (current && current.id === updatedUser.id) {
