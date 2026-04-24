@@ -326,7 +326,7 @@ function App() {
               const existingUsers = UserService.getAll();
               const existing = existingUsers.find((u) => u.email === email);
 
-              const user = UserService.login(email);
+              UserService.login(email);
 
               if (!existing) {
                 const admins = UserService.getAll().filter(
