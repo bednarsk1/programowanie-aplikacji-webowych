@@ -9,13 +9,17 @@ import { TaskService } from "./api/TaskService";
 import type { Task } from "./models/Task";
 import { NotificationService } from "./api/NotificationService";
 import type { Notification } from "./models/Notification";
+import { signInWithPopup, signOut } from "firebase/auth";
+import { auth, provider } from "./firebase";
 
 function App() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
-  const currentUser = UserService.getCurrentUser();
+  const [currentUser, setCurrentUser] = useState<any>(
+    UserService.getCurrentUser(),
+  );
   const [showNotifications, setShowNotifications] = useState(false);
   const [activeProjectId, setActiveProjectId] = useState<string | null>(
     ActiveProjectService.getActiveProject(),
@@ -42,7 +46,6 @@ function App() {
   const [activeStoryId, setActiveStoryId] = useState<string | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [darkMode, setDarkMode] = useState(false);
-  const [email, setEmail] = useState("");
 
   useEffect(() => {
     if (!currentUser) return;
@@ -91,6 +94,14 @@ function App() {
       document.documentElement.classList.remove("dark");
     }
   }, [darkMode]);
+
+  useEffect(() => {
+    const storedUser = UserService.getCurrentUser();
+
+    if (storedUser) {
+      setCurrentUser(storedUser);
+    }
+  }, []);
 
   const handleAddProject = () => {
     if (!name.trim() || !description.trim()) return;
@@ -309,47 +320,47 @@ function App() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="p-6 border rounded shadow w-80">
           <h2 className="text-xl mb-4">Logowanie</h2>
-
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="border p-2 w-full mb-3 rounded"
-          />
-
           <button
             className="w-full bg-blue-500 text-white p-2 rounded"
-            onClick={() => {
-              if (!email) return;
+            onClick={async () => {
+              try {
+                const result = await signInWithPopup(auth, provider);
 
-              const existingUsers = UserService.getAll();
-              const existing = existingUsers.find((u) => u.email === email);
+                const userEmail = result.user.email;
 
-              UserService.login(email);
+                if (!userEmail) return;
 
-              if (!existing) {
-                const admins = UserService.getAll().filter(
-                  (u) => u.role === "admin",
+                const existingUsers = UserService.getAll();
+                const existing = existingUsers.find(
+                  (u) => u.email === userEmail,
                 );
 
-                admins.forEach((admin) => {
-                  NotificationService.create({
-                    id: crypto.randomUUID(),
-                    title: "Nowy użytkownik",
-                    message: `Nowe konto: ${email}`,
-                    date: new Date().toISOString(),
-                    priority: "high",
-                    isRead: false,
-                    recipientId: admin.id,
-                  });
-                });
-              }
+                const loggedUser = UserService.login(userEmail);
+                setCurrentUser(loggedUser || UserService.getCurrentUser());
 
-              window.location.reload();
+                if (!existing) {
+                  const admins = UserService.getAll().filter(
+                    (u) => u.role === "admin",
+                  );
+
+                  admins.forEach((admin) => {
+                    NotificationService.create({
+                      id: crypto.randomUUID(),
+                      title: "Nowy użytkownik",
+                      message: `Nowe konto: ${userEmail}`,
+                      date: new Date().toISOString(),
+                      priority: "high",
+                      isRead: false,
+                      recipientId: admin.id,
+                    });
+                  });
+                }
+              } catch (error) {
+                console.error(error);
+              }
             }}
           >
-            Zaloguj przez Google
+            Kontynuuj z Google
           </button>
         </div>
       </div>
@@ -359,9 +370,25 @@ function App() {
   if (currentUser.role === "guest") {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="p-6 border rounded shadow">
-          <h2 className="text-xl mb-4">Oczekiwanie na zatwierdzenie</h2>
+        <div className="p-6 border rounded shadow flex flex-col gap-4">
+          <h2 className="text-xl mb-2">Oczekiwanie na zatwierdzenie</h2>
+
           <p>Twoje konto oczekuje na zatwierdzenie przez administratora</p>
+
+          <button
+            className="px-4 py-2 bg-red-500 text-white rounded"
+            onClick={async () => {
+              try {
+                await signOut(auth);
+                localStorage.removeItem("manageme_current_user");
+                setCurrentUser(null);
+              } catch (error) {
+                console.error(error);
+              }
+            }}
+          >
+            Wyloguj
+          </button>
         </div>
       </div>
     );
@@ -380,12 +407,29 @@ function App() {
 
   return (
     <div className="min-h-screen bg-white text-black dark:bg-gray-900 dark:text-white p-6">
-      <div className="flex justify-end mb-4">
+      <div className="flex justify-end gap-2 mb-4">
         <button
           className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-black dark:text-white rounded shadow"
           onClick={() => setDarkMode(!darkMode)}
         >
           {darkMode ? "☀️ Light" : "🌙 Dark"}
+        </button>
+
+        <button
+          className="px-4 py-2 bg-red-500 text-white rounded shadow"
+          onClick={async () => {
+            try {
+              await signOut(auth);
+
+              localStorage.removeItem("manageme_current_user");
+
+              setCurrentUser(null);
+            } catch (error) {
+              console.error(error);
+            }
+          }}
+        >
+          Wyloguj
         </button>
       </div>
       <div className="flex justify-between items-center mb-4">
@@ -495,44 +539,53 @@ function App() {
       <h1>ManageMe</h1>
 
       {currentUser.role === "admin" && (
-        <div className="mb-6 p-4 border rounded">
-          <h2 className="text-lg font-bold mb-2">Użytkownicy</h2>
+        <div className="mb-6 p-4 border rounded bg-white dark:bg-gray-800 shadow">
+          <h2 className="text-2xl font-bold mb-4">Użytkownicy</h2>
 
           {users.map((u) => (
-            <div key={u.id} className="flex items-center gap-2 mb-2">
-              <span className="w-48">{u.email}</span>
+            <div
+              key={u.id}
+              className="border rounded p-4 mb-3 flex flex-col gap-3 bg-gray-100 dark:bg-gray-700"
+            >
+              <div>
+                <p className="font-semibold text-lg">{u.email}</p>
+                <p>Rola: {u.role}</p>
+                <p>Status: {u.isBlocked ? "Zablokowany" : "Aktywny"}</p>
+              </div>
 
-              <select
-                value={u.role}
-                onChange={(e) => {
-                  UserService.update({
-                    ...u,
-                    role: e.target.value as any,
-                  });
-                  window.location.reload();
-                }}
-                className="border p-1 rounded"
-              >
-                <option value="admin">admin</option>
-                <option value="developer">developer</option>
-                <option value="devops">devops</option>
-                <option value="guest">guest</option>
-              </select>
-
-              <label className="flex items-center gap-1">
-                <input
-                  type="checkbox"
-                  checked={u.isBlocked}
+              <div className="flex gap-2 items-center flex-wrap">
+                <select
+                  value={u.role}
                   onChange={(e) => {
                     UserService.update({
                       ...u,
-                      isBlocked: e.target.checked,
+                      role: e.target.value as any,
                     });
+
                     window.location.reload();
                   }}
-                />
-                zablokowany
-              </label>
+                  className="border p-2 rounded bg-white dark:bg-gray-800 dark:text-white"
+                >
+                  <option value="admin">admin</option>
+                  <option value="developer">developer</option>
+                  <option value="devops">devops</option>
+                  <option value="guest">guest</option>
+                </select>
+
+                <button
+                  className="px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                  onClick={() => {
+                    UserService.update({
+                      ...u,
+                      isBlocked: !u.isBlocked,
+                    });
+
+                    window.location.reload();
+                  }}
+                >
+                  {u.isBlocked ? "Odblokuj" : "Zablokuj"}
+                </button>
+              </div>
             </div>
           ))}
         </div>

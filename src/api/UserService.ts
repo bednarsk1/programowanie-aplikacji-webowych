@@ -15,20 +15,8 @@ const SUPER_ADMIN_EMAIL = "bednarskipiotrpawel@gmail.com";
 
 export class UserService {
   static getAll(): User[] {
-    if (STORAGE_TYPE !== "firebase") {
-      const data = localStorage.getItem(USERS_KEY);
-      return data ? JSON.parse(data) : [];
-    }
-
-    const users: User[] = [];
-
-    getDocs(collection(db, "users")).then((snapshot) => {
-      snapshot.forEach((docItem) => {
-        users.push(docItem.data() as User);
-      });
-    });
-
-    return users;
+    const data = localStorage.getItem(USERS_KEY);
+    return data ? JSON.parse(data) : [];
   }
 
   static saveAll(users: User[]) {
@@ -57,10 +45,10 @@ export class UserService {
         isBlocked: false,
       };
 
-      if (STORAGE_TYPE !== "firebase") {
-        users.push(user);
-        this.saveAll(users);
-      } else {
+      users.push(user);
+      this.saveAll(users);
+
+      if (STORAGE_TYPE === "firebase") {
         addDoc(collection(db, "users"), { ...user });
       }
     }
@@ -71,19 +59,20 @@ export class UserService {
   }
 
   static update(updatedUser: User) {
-    if (STORAGE_TYPE !== "firebase") {
-      const users = this.getAll().map((u) =>
-        u.id === updatedUser.id ? updatedUser : u,
-      );
+    const users = this.getAll().map((u) =>
+      u.id === updatedUser.id ? updatedUser : u,
+    );
 
-      this.saveAll(users);
-    } else {
+    this.saveAll(users);
+
+    if (STORAGE_TYPE === "firebase") {
       updateDoc(doc(db, "users", updatedUser.id), {
         ...updatedUser,
       });
     }
 
     const current = this.getCurrentUser();
+
     if (current && current.id === updatedUser.id) {
       this.setCurrentUser(updatedUser);
     }
