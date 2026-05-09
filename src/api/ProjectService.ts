@@ -13,55 +13,62 @@ import {
 const STORAGE_KEY = "manageme_projects";
 
 export class ProjectService {
-  static getAll(): Project[] {
+  static async getAll(): Promise<Project[]> {
     if (STORAGE_TYPE !== "firebase") {
       const data = localStorage.getItem(STORAGE_KEY);
       return data ? JSON.parse(data) : [];
     }
 
-    const projects: Project[] = [];
-    getDocs(collection(db, "projects")).then((snapshot) => {
-      snapshot.forEach((docItem) => {
-        projects.push(docItem.data() as Project);
-      });
-    });
-    return projects;
+    const snapshot = await getDocs(collection(db, "projects"));
+
+    return snapshot.docs.map((docItem) => ({
+      ...(docItem.data() as Project),
+      id: docItem.id,
+    }));
   }
 
   static saveAll(projects: Project[]) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
   }
 
-  static create(project: Project) {
+  static async create(project: Project) {
     if (STORAGE_TYPE !== "firebase") {
-      const projects = this.getAll();
+      const projects = await this.getAll();
       projects.push(project);
       this.saveAll(projects);
       return;
     }
 
-    addDoc(collection(db, "projects"), { ...project });
+    await addDoc(collection(db, "projects"), {
+      name: project.name,
+      description: project.description,
+    });
   }
 
-  static update(updatedProject: Project) {
+  static async update(updatedProject: Project) {
     if (STORAGE_TYPE !== "firebase") {
-      const projects = this.getAll().map((project) =>
+      const projects = (await this.getAll()).map((project) =>
         project.id === updatedProject.id ? updatedProject : project,
       );
       this.saveAll(projects);
       return;
     }
 
-    updateDoc(doc(db, "projects", updatedProject.id), { ...updatedProject });
+    await updateDoc(doc(db, "projects", updatedProject.id), {
+      name: updatedProject.name,
+      description: updatedProject.description,
+    });
   }
 
-  static delete(id: string) {
+  static async delete(id: string) {
     if (STORAGE_TYPE !== "firebase") {
-      const projects = this.getAll().filter((project) => project.id !== id);
+      const projects = (await this.getAll()).filter(
+        (project) => project.id !== id,
+      );
       this.saveAll(projects);
       return;
     }
 
-    deleteDoc(doc(db, "projects", id));
+    await deleteDoc(doc(db, "projects", id));
   }
 }

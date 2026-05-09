@@ -14,63 +14,80 @@ import {
 const STORAGE_KEY = "manageme_tasks";
 
 export class TaskService {
-  static getAll(): Task[] {
+  static async getAll(): Promise<Task[]> {
     if (STORAGE_TYPE !== "firebase") {
       const data = localStorage.getItem(STORAGE_KEY);
       return data ? JSON.parse(data) : [];
     }
 
-    const tasks: Task[] = [];
+    const snapshot = await getDocs(collection(db, "tasks"));
 
-    getDocs(collection(db, "tasks")).then((snapshot) => {
-      snapshot.forEach((docItem) => {
-        tasks.push(docItem.data() as Task);
-      });
-    });
-
-    return tasks;
+    return snapshot.docs.map((docItem) => ({
+      ...(docItem.data() as Task),
+      id: docItem.id,
+    }));
   }
 
   static saveAll(tasks: Task[]) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
   }
 
-  static getByStory(storyId: string): Task[] {
-    return this.getAll().filter((task) => task.storyId === storyId);
+  static async getByStory(storyId: string): Promise<Task[]> {
+    return (await this.getAll()).filter((task) => task.storyId === storyId);
   }
 
-  static create(task: Task) {
+  static async create(task: Task) {
     if (STORAGE_TYPE !== "firebase") {
-      const tasks = this.getAll();
+      const tasks = await this.getAll();
       tasks.push(task);
       this.saveAll(tasks);
       return;
     }
 
-    addDoc(collection(db, "tasks"), { ...task });
+    await addDoc(collection(db, "tasks"), {
+      name: task.name,
+      description: task.description,
+      priority: task.priority,
+      storyId: task.storyId,
+      estimatedTime: task.estimatedTime,
+      status: task.status,
+      createdAt: task.createdAt,
+      userId: task.userId || null,
+      startDate: task.startDate || null,
+      endDate: task.endDate || null,
+    });
   }
 
-  static update(updatedTask: Task) {
+  static async update(updatedTask: Task) {
     if (STORAGE_TYPE !== "firebase") {
-      const tasks = this.getAll().map((task) =>
+      const tasks = (await this.getAll()).map((task) =>
         task.id === updatedTask.id ? updatedTask : task,
       );
       this.saveAll(tasks);
       return;
     }
 
-    updateDoc(doc(db, "tasks", updatedTask.id), {
-      ...updatedTask,
+    await updateDoc(doc(db, "tasks", updatedTask.id), {
+      name: updatedTask.name,
+      description: updatedTask.description,
+      priority: updatedTask.priority,
+      storyId: updatedTask.storyId,
+      estimatedTime: updatedTask.estimatedTime,
+      status: updatedTask.status,
+      createdAt: updatedTask.createdAt,
+      userId: updatedTask.userId || null,
+      startDate: updatedTask.startDate || null,
+      endDate: updatedTask.endDate || null,
     });
   }
 
-  static delete(id: string) {
+  static async delete(id: string) {
     if (STORAGE_TYPE !== "firebase") {
-      const tasks = this.getAll().filter((task) => task.id !== id);
+      const tasks = (await this.getAll()).filter((task) => task.id !== id);
       this.saveAll(tasks);
       return;
     }
 
-    deleteDoc(doc(db, "tasks", id));
+    await deleteDoc(doc(db, "tasks", id));
   }
 }

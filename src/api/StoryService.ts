@@ -13,45 +13,51 @@ import {
 const STORAGE_KEY = "manageme_stories";
 
 export class StoryService {
-  static getAll(): Story[] {
+  static async getAll(): Promise<Story[]> {
     if (STORAGE_TYPE !== "firebase") {
       const data = localStorage.getItem(STORAGE_KEY);
       return data ? JSON.parse(data) : [];
     }
 
-    const stories: Story[] = [];
-
-    getDocs(collection(db, "stories")).then((snapshot) => {
-      snapshot.forEach((docItem) => {
-        stories.push(docItem.data() as Story);
-      });
-    });
-
-    return stories;
+    const snapshot = await getDocs(collection(db, "stories"));
+    return snapshot.docs.map((docItem) => ({
+      ...(docItem.data() as Story),
+      id: docItem.id,
+    }));
   }
 
   static saveAll(stories: Story[]) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(stories));
   }
 
-  static getByProject(projectId: string): Story[] {
-    return this.getAll().filter((story) => story.projectId === projectId);
+  static async getByProject(projectId: string): Promise<Story[]> {
+    return (await this.getAll()).filter(
+      (story) => story.projectId === projectId,
+    );
   }
 
-  static create(story: Story) {
+  static async create(story: Story) {
     if (STORAGE_TYPE !== "firebase") {
-      const stories = this.getAll();
+      const stories = await this.getAll();
       stories.push(story);
       this.saveAll(stories);
       return;
     }
 
-    addDoc(collection(db, "stories"), { ...story });
+    await addDoc(collection(db, "stories"), {
+      name: story.name,
+      description: story.description,
+      priority: story.priority,
+      projectId: story.projectId,
+      createdAt: story.createdAt,
+      status: story.status,
+      ownerId: story.ownerId,
+    });
   }
 
-  static update(updatedStory: Story) {
+  static async update(updatedStory: Story) {
     if (STORAGE_TYPE !== "firebase") {
-      const stories = this.getAll().map((story) =>
+      const stories = (await this.getAll()).map((story) =>
         story.id === updatedStory.id ? updatedStory : story,
       );
 
@@ -59,18 +65,24 @@ export class StoryService {
       return;
     }
 
-    updateDoc(doc(db, "stories", updatedStory.id), {
-      ...updatedStory,
+    await updateDoc(doc(db, "stories", updatedStory.id), {
+      name: updatedStory.name,
+      description: updatedStory.description,
+      priority: updatedStory.priority,
+      projectId: updatedStory.projectId,
+      createdAt: updatedStory.createdAt,
+      status: updatedStory.status,
+      ownerId: updatedStory.ownerId,
     });
   }
 
-  static delete(id: string) {
+  static async delete(id: string) {
     if (STORAGE_TYPE !== "firebase") {
-      const stories = this.getAll().filter((story) => story.id !== id);
+      const stories = (await this.getAll()).filter((story) => story.id !== id);
       this.saveAll(stories);
       return;
     }
 
-    deleteDoc(doc(db, "stories", id));
+    await deleteDoc(doc(db, "stories", id));
   }
 }
