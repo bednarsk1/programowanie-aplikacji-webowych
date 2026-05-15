@@ -128,13 +128,12 @@ function App() {
 
     try {
       if (editingId) {
-        //  Zwróć uwagę, czy nadpisując obiekt poniżej nie kasujesz w bazie innych pól!
         const updatedProject: Project = {
           id: editingId,
           name,
           description,
         };
-        await ProjectService.update(updatedProject); // [cite: 28]
+        await ProjectService.update(updatedProject);
 
         const updatedProjects = await ProjectService.getAll();
 
@@ -154,8 +153,8 @@ function App() {
           id: crypto.randomUUID(),
           name,
           description,
-        }; // [cite: 29]
-        await ProjectService.create(newProject); //
+        };
+        await ProjectService.create(newProject);
       }
 
       const updatedProjects = await ProjectService.getAll();
@@ -177,8 +176,8 @@ function App() {
         priority: "high",
         isRead: false,
         recipientId: currentUser!.id,
-      }); // [cite: 31]
-      setNotifications(NotificationService.getForUser(currentUser!.id)); //
+      });
+      setNotifications(NotificationService.getForUser(currentUser!.id));
     } catch (error) {
       console.error("Błąd podczas zapisywania/edycji:", error);
       alert("Operacja się nie powiodła!");
@@ -189,7 +188,7 @@ function App() {
 
   const handleDeleteProject = async (id: string) => {
     try {
-      await ProjectService.delete(id); //
+      await ProjectService.delete(id);
 
       const updatedProjects = await ProjectService.getAll();
 
