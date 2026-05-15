@@ -70,8 +70,15 @@ function App() {
   useEffect(() => {
     if (!currentUser) return;
 
-    const userNotifications = NotificationService.getForUser(currentUser!.id);
-    setNotifications(userNotifications);
+    const loadNotifications = async () => {
+      const userNotifications = await NotificationService.getForUser(
+        currentUser!.id,
+      );
+
+      setNotifications(userNotifications);
+    };
+
+    loadNotifications();
   }, [currentUser]);
 
   useEffect(() => {
@@ -168,7 +175,7 @@ function App() {
       setName("");
       setDescription("");
 
-      NotificationService.create({
+      await NotificationService.create({
         id: crypto.randomUUID(),
         title: "Nowy projekt",
         message: "Utworzono nowy projekt",
@@ -177,7 +184,19 @@ function App() {
         isRead: false,
         recipientId: currentUser!.id,
       });
-      setNotifications(NotificationService.getForUser(currentUser!.id));
+
+      setNotifications((prev) => [
+        {
+          id: crypto.randomUUID(),
+          title: "Nowy projekt",
+          message: "Utworzono nowy projekt",
+          date: new Date().toISOString(),
+          priority: "high",
+          isRead: false,
+          recipientId: currentUser!.id,
+        },
+        ...prev,
+      ]);
     } catch (error) {
       console.error("Błąd podczas zapisywania/edycji:", error);
       alert("Operacja się nie powiodła!");
@@ -314,7 +333,7 @@ function App() {
     setTasks([...updatedTasks]);
     const story = stories.find((s) => s.id === activeStoryId);
     if (story) {
-      NotificationService.create({
+      await NotificationService.create({
         id: crypto.randomUUID(),
         title: "Nowe zadanie",
         message: `Dodano zadanie do historyjki: ${story.name}`,
@@ -323,7 +342,7 @@ function App() {
         isRead: false,
         recipientId: story.ownerId,
       });
-      setNotifications(NotificationService.getForUser(currentUser!.id));
+      setNotifications((prev) => [...prev]);
     }
 
     setTaskName("");
@@ -342,7 +361,7 @@ function App() {
 
     await TaskService.update(updatedTask);
 
-    NotificationService.create({
+    await NotificationService.create({
       id: crypto.randomUUID(),
       title: "Przypisano zadanie",
       message: `Zadanie ${task.name} zostało przypisane`,
@@ -354,7 +373,7 @@ function App() {
 
     const story = stories.find((s) => s.id === activeStoryId);
     if (story) {
-      NotificationService.create({
+      await NotificationService.create({
         id: crypto.randomUUID(),
         title: "Zadanie w trakcie",
         message: `Zadanie ${task.name} ma status DOING`,
@@ -365,7 +384,7 @@ function App() {
       });
     }
 
-    setNotifications(NotificationService.getForUser(currentUser!.id));
+    setNotifications((prev) => [...prev]);
 
     if (activeStoryId) {
       const updatedTasks = await TaskService.getByStory(activeStoryId);
@@ -387,7 +406,7 @@ function App() {
 
     await TaskService.update(updatedTask);
 
-    NotificationService.create({
+    await NotificationService.create({
       id: crypto.randomUUID(),
       title: "Zadanie zakończone",
       message: `Zadanie ${task.name} zostało zakończone`,
@@ -396,7 +415,7 @@ function App() {
       isRead: false,
       recipientId: currentUser!.id,
     });
-    setNotifications(NotificationService.getForUser(currentUser!.id));
+    setNotifications((prev) => [...prev]);
 
     if (activeStoryId) {
       const updatedTasks = await TaskService.getByStory(activeStoryId);
@@ -568,8 +587,10 @@ function App() {
                   onClick={() => {
                     setSelectedNotification(n);
                     NotificationService.markAsRead(n.id);
-                    setNotifications(
-                      NotificationService.getForUser(currentUser!.id),
+                    setNotifications((prev) =>
+                      prev.map((item) =>
+                        item.id === n.id ? { ...item, isRead: true } : item,
+                      ),
                     );
                   }}
                 >
@@ -583,8 +604,10 @@ function App() {
                       onClick={(e) => {
                         e.stopPropagation();
                         NotificationService.markAsRead(n.id);
-                        setNotifications(
-                          NotificationService.getForUser(currentUser!.id),
+                        setNotifications((prev) =>
+                          prev.map((item) =>
+                            item.id === n.id ? { ...item, isRead: true } : item,
+                          ),
                         );
                       }}
                     >
@@ -605,8 +628,10 @@ function App() {
               className="text-blue-500 text-sm mt-2"
               onClick={() => {
                 NotificationService.markAsRead(toast.id);
-                setNotifications(
-                  NotificationService.getForUser(currentUser!.id),
+                setNotifications((prev) =>
+                  prev.map((item) =>
+                    item.id === toast.id ? { ...item, isRead: true } : item,
+                  ),
                 );
                 setToast(null);
               }}
@@ -1027,7 +1052,7 @@ function App() {
                                 (s) => s.id === activeStoryId,
                               );
                               if (story) {
-                                NotificationService.create({
+                                await NotificationService.create({
                                   id: crypto.randomUUID(),
                                   title: "Usunięto zadanie",
                                   message: `Zadanie ${task.name} zostało usunięte`,
@@ -1036,11 +1061,7 @@ function App() {
                                   isRead: false,
                                   recipientId: story.ownerId,
                                 });
-                                setNotifications(
-                                  NotificationService.getForUser(
-                                    currentUser.id,
-                                  ),
-                                );
+                                setNotifications((prev) => [...prev]);
                               }
                             }}
                           >
